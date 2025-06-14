@@ -32,8 +32,12 @@ WiFi.localIP:
 23мая25
 https://projectalt.ru/publ/arduino_esp8266_i_esp32/programmirovanie/esp8266_nodemcu_otpravka_soobshhenij_v_whatsapp/11-1-0-26
 ESP8266 NodeMCU: отправка сообщений в WhatsApp
-*/
 
+14июн25
+Разработал библиотеки для сокрытия информации по логинам и паролям на основе:
+https://www.instructables.com/Build-a-Custom-ESP8266-Arduino-WiFi-Library/
+и упорядочил скетч
+*/
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
 #include <Wire.h>
@@ -43,17 +47,23 @@ ESP8266 NodeMCU: отправка сообщений в WhatsApp
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 #include <UrlEncode.h>
- 
-String apiKey = "*****";     //  Enter your Write API key from ThingSpeak
- 
-const char *ssid =  "*****";     // replace with your wifi ssid and wpa2 key
-const char *pass =  "*****";
-const char* server = "api.thingspeak.com";
 
-// +international_country_code + phone number
-// Portugal +351, example: +351912345678
-String phoneNumber = "+7*****";
-String apiKeyW = "*****";
+#include <My_WiFi.h>
+My_WiFi my_wifi; // создаём экземпляр нашего класса
+const char* ssid = my_wifi.ssid();
+const char* pass = my_wifi.passcode();
+
+#include <My_WhatsApp.h>
+My_WhatsApp my_whatsapp; // создаём экземпляр нашего класса
+String phoneNumber = my_whatsapp.phoneNumber();
+const char* apiKeyW = my_whatsapp.apiKeyW();
+
+#include <My_ThingSpeak.h>
+My_ThingSpeak my_thingspeak; // создаём экземпляр нашего класса
+//const char* apiKey = my_thingspeak.apiKeyTh();
+String apiKey = my_thingspeak.apiKeyTh();
+
+const char* server = "api.thingspeak.com";
 
 Adafruit_BME280 bme;
 
@@ -67,12 +77,11 @@ const long interval = (15 * 60000); //интервал равен 15-ти мин
 
 /*Временные задержки для посылки в ThingSpeak*/
 unsigned long previousMillisTh = 0;
-const long intervalTh = (15 * 1000); //интервал равен 15-ти секундам
+const long intervalTh = (20 * 1000); //интервал равен 20-ти секундам
 
 float temperature, humidity, pressure, altitude;
 
 String TWat = "Повышенная температура = ";
-//String TWat = "Temperatur = ";
 String TWatZ;
 
 WiFiClient client;
@@ -107,6 +116,9 @@ void sendMessage(String message){
  //Освобождение ресурсов
  http.end();
 }
+
+void ConnecTOWifi(void) ;
+byte tries = 10;  // Попыткок подключения к точке доступа
  
 void setup() 
 {
@@ -117,21 +129,9 @@ void setup()
        C = 26; //avarijnoe znachenie temperatury
 	   
         bme.begin(0x76);  
- 
-       Serial.println("Connecting to ");
-       Serial.println(ssid);
- 
-       WiFi.begin(ssid, pass);
- 
-       while (WiFi.status() != WL_CONNECTED) 
-     {
-            delay(1000);
-            Serial.print(".");
-     }
-      Serial.println("");
-      Serial.println("WiFi connected");
-	    Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
-	 delay(10000);	//10-секундная задержка
+		
+	ConnecTOWifi();
+  delay(2000);	//2-секундная задержка
 	 
  //Send Message to WhatsAPP
  //Отправка контрольного сообщения на WhatsAPP
@@ -139,11 +139,33 @@ void setup()
      // sendMessage("Hello from ESP8266 NodeMCU!");
 
     //  delay(10000);
-      
+
+Serial.print("phoneNumber: ");
+Serial.println(phoneNumber);
+
+Serial.print("apiKeyW: ");
+Serial.println(apiKeyW);
+
+Serial.print("ssid: ");
+Serial.println(ssid);
+
+Serial.print("pass: ");
+Serial.println(pass);
+
+Serial.print("apiKey: ");
+Serial.println(apiKey);
+
+delay(10000);
+
  }
  
 void loop() 
 {
+	
+	// Reconnect to Wi-Fi
+    if(WiFi.status() != WL_CONNECTED)
+		ConnecTOWifi();
+	
   temperature = bme.readTemperature();
   humidity = bme.readHumidity();
 	pressure = bme.readPressure() / 100.0F * 0.75;
@@ -179,53 +201,73 @@ void loop()
     if (client.connect(server,80))   //   "184.106.153.149" or api.thingspeak.com
       {  
 		unsigned long currentMillisTh = millis();
-		if (currentMillisTh - previousMillis >= intervalTh) 
-		{
-		  previousMillisTh = currentMillisTh;
+		  if (currentMillisTh - previousMillis >= intervalTh) 
+		    {
+		      previousMillisTh = currentMillisTh;
 
-        String postStr = apiKey;
-        postStr +="&field1=";
-        postStr += String(temperature);
-        postStr +="&field2=";
-        postStr += String(humidity);
-		    postStr +="&field3=";
-        postStr += String(pressure);
-        postStr += "\r\n\r\n";
+          String postStr = apiKey;
+          postStr +="&field1=";
+          postStr += String(temperature);
+          postStr +="&field2=";
+          postStr += String(humidity);
+		      postStr +="&field3=";
+          postStr += String(pressure);
+          postStr += "\r\n\r\n";
  
-        client.print("POST /update HTTP/1.1\n");
-        client.print("Host: api.thingspeak.com\n");
-        client.print("Connection: close\n");
-        client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
-        client.print("Content-Type: application/x-www-form-urlencoded\n");
-        client.print("Content-Length: ");
-        client.print(postStr.length());
-        client.print("\n\n");
-        client.print(postStr);
+          client.print("POST /update HTTP/1.1\n");
+          client.print("Host: api.thingspeak.com\n");
+          client.print("Connection: close\n");
+          client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n");
+          client.print("Content-Type: application/x-www-form-urlencoded\n");
+          client.print("Content-Length: ");
+          client.print(postStr.length());
+          client.print("\n\n");
+          client.print(postStr);
 		
-		}
-		
-		/*
-        Serial.print("Temperature: ");
-        Serial.print(temperature);
-        Serial.print(" degrees Celcius, Humidity: ");
-        Serial.print(humidity);
-        Serial.println("%, Pressure: ");
-		    Serial.print(pressure);
-        Serial.println("mmHg. Send to Thingspeak.");
-		*/
+		    }
       }
     client.stop();
  		
-        Serial.print("Temperature: ");
-        Serial.print(temperature);
-        Serial.print(" degrees Celcius, Humidity: ");
-        Serial.print(humidity);
-        Serial.println("%, Pressure: ");
-		    Serial.print(pressure);
-        Serial.println("mmHg. Send to Thingspeak.");
+    Serial.print("Temperature: ");
+    Serial.print(temperature);
+    Serial.print(" degrees Celcius, Humidity: ");
+    Serial.print(humidity);
+    Serial.println("%, Pressure: ");
+		Serial.print(pressure);
+    Serial.println("mmHg. Send to Thingspeak.");
  
     Serial.println("Waiting...");
   
   // thingspeak needs minimum 15 sec delay between updates
   delay(1000);
+}
+
+void ConnecTOWifi()
+{   Serial.print("Connecting to ");             // Печать "Подключение к:"
+    Serial.println(ssid);                       // Печать "Название Вашей WiFi сети"
+	WiFi.mode(WIFI_STA); // nodemcu as station
+	WiFi.begin(ssid, pass);                 // Подключение к WiFi Сети
+//	Serial.print ("connecting to wifi");
+	while (--tries && WiFi.status() != WL_CONNECTED)
+	{
+		delay(500);                               // Пауза 500 мкс
+        Serial.print(".");                        // Печать "."
+	}
+	
+	if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.println("Non Connecting to WiFi..");
+  }
+  else
+  {
+    // Иначе удалось подключиться отправляем сообщение
+    // о подключении и выводим адрес IP
+    Serial.println("");
+    Serial.println("WiFi connected");
+   	Serial.print("IP Address:");
+	  Serial.println(WiFi.localIP());
+	  Serial.print("MacAddress:");
+	  Serial.println(WiFi .macAddress());
+  }
+
 }

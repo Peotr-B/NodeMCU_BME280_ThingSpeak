@@ -118,7 +118,7 @@ void sendMessage(String message){
 }
 
 void ConnecTOWifi(void) ;
-byte tries = 10;  // Попыткок подключения к точке доступа
+byte tries = 20;  // Попыткок подключения к точке доступа
  
 void setup() 
 {
@@ -252,11 +252,14 @@ void ConnecTOWifi()
 	{
 		delay(500);                               // Пауза 500 мкс
         Serial.print(".");                        // Печать "."
+		Serial.print(tries);
 	}
 	
 	if (WiFi.status() != WL_CONNECTED)
   {
+    Serial.println();
     Serial.println("Non Connecting to WiFi..");
+    tries=20;
   }
   else
   {

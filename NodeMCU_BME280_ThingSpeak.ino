@@ -37,6 +37,9 @@ ESP8266 NodeMCU: отправка сообщений в WhatsApp
 Разработал библиотеки для сокрытия информации по логинам и паролям на основе:
 https://www.instructables.com/Build-a-Custom-ESP8266-Arduino-WiFi-Library/
 и упорядочил скетч
+
+20июн25
+Применил локальную универсальную библиотеку, расположенную в папке со скетчем
 */
 #include <ESP8266WebServer.h>
 #include <ESP8266WiFi.h>
@@ -48,6 +51,12 @@ https://www.instructables.com/Build-a-Custom-ESP8266-Arduino-WiFi-Library/
 #include <WiFiClient.h>
 #include <UrlEncode.h>
 
+#include "My_secrets.h"
+
+String phoneNumber = phone_Number;  //Важно!
+String apiKey = api_Key;            //Важно!
+
+/*
 #include <My_WiFi.h>
 My_WiFi my_wifi; // создаём экземпляр нашего класса
 const char* ssid = my_wifi.ssid();
@@ -62,7 +71,7 @@ const char* apiKeyW = my_whatsapp.apiKeyW();
 My_ThingSpeak my_thingspeak; // создаём экземпляр нашего класса
 //const char* apiKey = my_thingspeak.apiKeyTh();
 String apiKey = my_thingspeak.apiKeyTh();
-
+*/
 const char* server = "api.thingspeak.com";
 
 Adafruit_BME280 bme;
@@ -168,7 +177,7 @@ void loop()
 	
   temperature = bme.readTemperature();
   humidity = bme.readHumidity();
-	pressure = bme.readPressure() / 100.0F * 0.75;
+  pressure = bme.readPressure() / 100.0F * 0.75;
   TWatZ = TWat+temperature;
 	  
     if(temperature > C)
@@ -210,7 +219,7 @@ void loop()
           postStr += String(temperature);
           postStr +="&field2=";
           postStr += String(humidity);
-		      postStr +="&field3=";
+		  postStr +="&field3=";
           postStr += String(pressure);
           postStr += "\r\n\r\n";
  
@@ -268,9 +277,9 @@ void ConnecTOWifi()
     Serial.println("");
     Serial.println("WiFi connected");
    	Serial.print("IP Address:");
-	  Serial.println(WiFi.localIP());
-	  Serial.print("MacAddress:");
-	  Serial.println(WiFi .macAddress());
+	Serial.println(WiFi.localIP());
+	Serial.print("MacAddress:");
+	Serial.println(WiFi .macAddress());
   }
 
 }

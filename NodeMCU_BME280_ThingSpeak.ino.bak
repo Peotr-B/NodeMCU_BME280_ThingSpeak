@@ -48,7 +48,7 @@ https://www.instructables.com/Build-a-Custom-ESP8266-Arduino-WiFi-Library/
 #include <Adafruit_BME280.h>
 
 #include <ESP8266HTTPClient.h>
-//#include <WiFiClient.h>
+#include <WiFiClient.h>
 #include <UrlEncode.h>
 
 #include "My_secrets.h"

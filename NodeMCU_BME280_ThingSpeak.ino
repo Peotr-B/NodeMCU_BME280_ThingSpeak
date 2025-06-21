@@ -53,8 +53,9 @@ https://www.instructables.com/Build-a-Custom-ESP8266-Arduino-WiFi-Library/
 
 #include "My_secrets.h"
 
-String phoneNumber = phone_Number;  //Важно!
-String apiKey = api_Key;            //Важно!
+String phoneNumber = phone_Number;  //Важно! Из-за знака "+" по-другому не получается
+//String apiKey = api_Key;          //Важно при использовании #define api_Key "YOUR_WRITE_API_KEY"
+                                    //в My_secrets/h
 
 /*
 #include <My_WiFi.h>

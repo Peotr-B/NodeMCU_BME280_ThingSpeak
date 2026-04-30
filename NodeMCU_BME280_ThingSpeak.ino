@@ -1,4 +1,8 @@
-/*4мая25
+/*
+ВАЖНО!
+В ArduinoIDE выбирать плату NodeMCU 1.0 (ESP-12E Module)
+
+4мая25
 Метеостанция на NodeMCU ESP8266 и датчике BME280
 на основе "Передача с помощью NodeMCU ESP8266 данных температуры и влажности на ThingSpeak
 https://microkontroller.ru/esp8266-projects/peredacha-s-pomoshhyu-nodemcu-esp8266-dannyh-temperatury-i-vlazhnosti-na-thingspeak/
